@@ -44,6 +44,73 @@ export default function QRCodeGenerator() {
   const [isGeneratingPreview, setIsGeneratingPreview] = useState(false)
   const [qrSize, setQrSize] = useState(400)
   const [qrMargin, setQrMargin] = useState(4)
+  const [logoFile, setLogoFile] = useState<File | null>(null)
+
+  // Live preview for quick generator
+  const generateQuickPreview = useCallback(async () => {
+    if (!quickText.trim()) {
+      setQuickGeneratedQR(null)
+      return
+    }
+
+    try {
+      const qrCode = await QRCodeService.generateQRCode({
+        text: quickText.trim(),
+        size: 300
+      })
+      setQuickGeneratedQR(qrCode)
+    } catch (err) {
+      console.error('Failed to generate quick preview:', err)
+      setQuickGeneratedQR(null)
+    }
+  }, [quickText])
+
+  // Generate quick preview when text changes
+  useEffect(() => {
+    const debounceTimer = setTimeout(() => {
+      generateQuickPreview()
+    }, 300)
+
+    return () => clearTimeout(debounceTimer)
+  }, [generateQuickPreview])
+
+  // Logo file upload handler
+  const handleLogoFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setCustomError('Please select a valid image file')
+      return
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setCustomError('Image file size must be less than 5MB')
+      return
+    }
+
+    setLogoFile(file)
+    
+    // Convert file to data URL
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string
+      setLogoUrl(dataUrl)
+      setCustomError('') // Clear any previous errors
+    }
+    reader.onerror = () => {
+      setCustomError('Failed to read the image file')
+      setLogoFile(null)
+    }
+    reader.readAsDataURL(file)
+  }, [])
+
+  const clearLogo = useCallback(() => {
+    setLogoUrl('')
+    setLogoFile(null)
+  }, [])
 
   // Quick Generator Functions
   const handleQuickGenerate = async (e: React.FormEvent) => {
@@ -608,16 +675,66 @@ export default function QRCodeGenerator() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <Label className="text-sm">Logo URL</Label>
-                    <Input
-                      type="url"
-                      value={logoUrl}
-                      onChange={(e) => setLogoUrl(e.target.value)}
-                      placeholder="https://example.com/logo.png"
-                      className="mt-2 text-sm"
-                    />
+                    <Label className="text-sm">Logo</Label>
+                    <div className="mt-2 space-y-3">
+                      {/* File Upload */}
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Upload from device</Label>
+                        <div className="flex gap-2 mt-1">
+                          <Input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleLogoFileUpload}
+                            className="text-sm"
+                          />
+                          {(logoUrl || logoFile) && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={clearLogo}
+                              className="shrink-0"
+                            >
+                              Clear
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* URL Input */}
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Or enter URL</Label>
+                        <Input
+                          type="url"
+                          value={logoFile ? '' : logoUrl}
+                          onChange={(e) => {
+                            setLogoFile(null)
+                            setLogoUrl(e.target.value)
+                          }}
+                          placeholder="https://example.com/logo.png"
+                          className="mt-1 text-sm"
+                          disabled={!!logoFile}
+                        />
+                      </div>
+                      
+                      {/* Preview */}
+                      {logoUrl && (
+                        <div className="flex items-center gap-2">
+                          <img 
+                            src={logoUrl} 
+                            alt="Logo preview" 
+                            className="w-8 h-8 object-contain border rounded"
+                            onError={() => setCustomError('Failed to load logo image')}
+                          />
+                          <span className="text-xs text-muted-foreground">
+                            {logoFile ? logoFile.name : 'External URL'}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    
                     <p className="text-xs text-muted-foreground mt-2">
-                      For best results, use a square logo (PNG with transparency recommended)
+                      For best results, use a square logo (PNG with transparency recommended). Max 5MB.
                     </p>
                   </div>
                 </CardContent>

@@ -61,8 +61,6 @@ export class AdvancedQRService {
       data: options.text,
       margin: options.margin || 4,
       qrOptions: {
-        typeNumber: 0,
-        mode: 'Byte' as const,
         errorCorrectionLevel: options.errorCorrectionLevel || 'M'
       },
       imageOptions: {
@@ -91,40 +89,31 @@ export class AdvancedQRService {
 
     // Apply gradient if specified
     if (options.gradientType && options.gradientType !== 'none' && options.gradientColors) {
-      qrCodeConfig.dotsOptions = {
-        ...qrCodeConfig.dotsOptions,
-        gradient: {
-          type: options.gradientType,
-          rotation: options.gradientType === 'linear' ? 0 : undefined,
-          colorStops: [
-            { offset: 0, color: options.gradientColors[0] },
-            { offset: 1, color: options.gradientColors[1] }
-          ]
-        }
-      }
+      (qrCodeConfig.dotsOptions as any).gradient = {
+        type: options.gradientType,
+        rotation: options.gradientType === 'linear' ? 0 : undefined,
+        colorStops: [
+          { offset: 0, color: options.gradientColors[0] },
+          { offset: 1, color: options.gradientColors[1] }
+        ]
+      };
       
-      qrCodeConfig.cornersSquareOptions = {
-        ...qrCodeConfig.cornersSquareOptions,
-        gradient: {
-          type: options.gradientType,
-          rotation: options.gradientType === 'linear' ? 0 : undefined,
-          colorStops: [
-            { offset: 0, color: options.gradientColors[0] },
-            { offset: 1, color: options.gradientColors[1] }
-          ]
-        }
-      }
+      (qrCodeConfig.cornersSquareOptions as any).gradient = {
+        type: options.gradientType,
+        rotation: options.gradientType === 'linear' ? 0 : undefined,
+        colorStops: [
+          { offset: 0, color: options.gradientColors[0] },
+          { offset: 1, color: options.gradientColors[1] }
+        ]
+      };
       
-      qrCodeConfig.cornersDotOptions = {
-        ...qrCodeConfig.cornersDotOptions,
-        gradient: {
-          type: options.gradientType,
-          rotation: options.gradientType === 'linear' ? 0 : undefined,
-          colorStops: [
-            { offset: 0, color: options.gradientColors[0] },
-            { offset: 1, color: options.gradientColors[1] }
-          ]
-        }
+      (qrCodeConfig.cornersDotOptions as any).gradient = {
+        type: options.gradientType,
+        rotation: options.gradientType === 'linear' ? 0 : undefined,
+        colorStops: [
+          { offset: 0, color: options.gradientColors[0] },
+          { offset: 1, color: options.gradientColors[1] }
+        ]
       }
     }
 

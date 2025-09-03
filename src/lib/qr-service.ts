@@ -23,22 +23,27 @@ export class QRCodeService {
     margin?: number
     errorCorrectionLevel?: QRCode.QRCodeErrorCorrectionLevel
   }): Promise<GeneratedQRCode> {
-    const canvas = document.createElement('canvas')
-    
-    await QRCode.toCanvas(canvas, options.text, {
-      width: options.size || 300,
-      margin: options.margin || 4,
-      errorCorrectionLevel: options.errorCorrectionLevel || 'M',
-      color: {
-        dark: '#000000',
-        light: '#FFFFFF'
-      }
-    })
+    try {
+      const canvas = document.createElement('canvas')
+      
+      await QRCode.toCanvas(canvas, options.text, {
+        width: options.size || 300,
+        margin: options.margin || 4,
+        errorCorrectionLevel: options.errorCorrectionLevel || 'M',
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      })
 
-    return {
-      dataUrl: canvas.toDataURL(),
-      text: options.text,
-      size: options.size || 300
+      return {
+        dataUrl: canvas.toDataURL(),
+        text: options.text,
+        size: options.size || 300
+      }
+    } catch (error) {
+      console.error('Failed to generate QR code:', error)
+      throw new Error('Failed to generate QR code. Please check your input text.')
     }
   }
 

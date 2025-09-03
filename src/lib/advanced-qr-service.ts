@@ -61,7 +61,7 @@ export class AdvancedQRService {
       data: options.text,
       margin: options.margin || 4,
       qrOptions: {
-        errorCorrectionLevel: options.errorCorrectionLevel || 'M'
+        errorCorrectionLevel: (options.errorCorrectionLevel || 'M') as any
       },
       imageOptions: {
         hideBackgroundDots: true,
@@ -71,18 +71,18 @@ export class AdvancedQRService {
       },
       dotsOptions: {
         color: options.foregroundColor || '#000000',
-        type: getDotType(options.dotStyle || 'square')
+        type: getDotType(options.dotStyle || 'square') as any
       },
       backgroundOptions: {
         color: options.backgroundColor || '#FFFFFF',
       },
       image: options.logoUrl || undefined,
       cornersSquareOptions: {
-        type: getDotType(options.dotStyle || 'square'),
+        type: getDotType(options.dotStyle || 'square') as any,
         color: options.foregroundColor || '#000000'
       },
       cornersDotOptions: {
-        type: getDotType(options.dotStyle || 'square'),
+        type: getDotType(options.dotStyle || 'square') as any,
         color: options.foregroundColor || '#000000'
       }
     }

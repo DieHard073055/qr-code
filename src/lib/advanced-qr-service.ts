@@ -1,4 +1,5 @@
 import QRCode from 'qrcode'
+import QRCodeStyling from 'qr-code-styling'
 
 export type DotStyle = 'square' | 'circle' | 'rounded' | 'dots'
 export type GradientType = 'none' | 'linear' | 'radial'
@@ -39,135 +40,120 @@ export interface DotTypeOption {
 
 export class AdvancedQRService {
   static async generateCustomQR(options: AdvancedQROptions): Promise<CustomGeneratedQRCode> {
-    const canvas = document.createElement('canvas')
     const size = options.size || 400
     
-    // Generate basic QR code first
-    await QRCode.toCanvas(canvas, options.text, {
-      width: size,
-      margin: options.margin || 4,
-      errorCorrectionLevel: options.errorCorrectionLevel || 'M',
-      color: {
-        dark: options.foregroundColor || '#000000',
-        light: options.backgroundColor || '#FFFFFF'
+    // Map our dot styles to qr-code-styling format
+    const getDotType = (style: DotStyle) => {
+      switch (style) {
+        case 'square': return 'square'
+        case 'circle': return 'dots'  
+        case 'rounded': return 'rounded'
+        case 'dots': return 'classy'
+        default: return 'square'
       }
+    }
+
+    // Configure QR code styling options
+    const qrCodeConfig = {
+      width: size,
+      height: size,
+      type: 'canvas' as const,
+      data: options.text,
+      margin: options.margin || 4,
+      qrOptions: {
+        typeNumber: 0,
+        mode: 'Byte' as const,
+        errorCorrectionLevel: options.errorCorrectionLevel || 'M'
+      },
+      imageOptions: {
+        hideBackgroundDots: true,
+        imageSize: 0.4,
+        margin: 0,
+        crossOrigin: 'anonymous' as const,
+      },
+      dotsOptions: {
+        color: options.foregroundColor || '#000000',
+        type: getDotType(options.dotStyle || 'square')
+      },
+      backgroundOptions: {
+        color: options.backgroundColor || '#FFFFFF',
+      },
+      image: options.logoUrl || undefined,
+      cornersSquareOptions: {
+        type: getDotType(options.dotStyle || 'square'),
+        color: options.foregroundColor || '#000000'
+      },
+      cornersDotOptions: {
+        type: getDotType(options.dotStyle || 'square'),
+        color: options.foregroundColor || '#000000'
+      }
+    }
+
+    // Apply gradient if specified
+    if (options.gradientType && options.gradientType !== 'none' && options.gradientColors) {
+      qrCodeConfig.dotsOptions = {
+        ...qrCodeConfig.dotsOptions,
+        gradient: {
+          type: options.gradientType,
+          rotation: options.gradientType === 'linear' ? 0 : undefined,
+          colorStops: [
+            { offset: 0, color: options.gradientColors[0] },
+            { offset: 1, color: options.gradientColors[1] }
+          ]
+        }
+      }
+      
+      qrCodeConfig.cornersSquareOptions = {
+        ...qrCodeConfig.cornersSquareOptions,
+        gradient: {
+          type: options.gradientType,
+          rotation: options.gradientType === 'linear' ? 0 : undefined,
+          colorStops: [
+            { offset: 0, color: options.gradientColors[0] },
+            { offset: 1, color: options.gradientColors[1] }
+          ]
+        }
+      }
+      
+      qrCodeConfig.cornersDotOptions = {
+        ...qrCodeConfig.cornersDotOptions,
+        gradient: {
+          type: options.gradientType,
+          rotation: options.gradientType === 'linear' ? 0 : undefined,
+          colorStops: [
+            { offset: 0, color: options.gradientColors[0] },
+            { offset: 1, color: options.gradientColors[1] }
+          ]
+        }
+      }
+    }
+
+    // Create and render QR code
+    const qrCodeStyling = new QRCodeStyling(qrCodeConfig)
+    
+    // Get the canvas using proper qr-code-styling API
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      qrCodeStyling.getRawData('png').then(buffer => {
+        if (buffer) {
+          const blob = new Blob([buffer], { type: 'image/png' })
+          const reader = new FileReader()
+          reader.onload = () => resolve(reader.result as string)
+          reader.onerror = reject
+          reader.readAsDataURL(blob)
+        } else {
+          reject(new Error('Failed to generate QR code'))
+        }
+      }).catch(reject)
     })
 
-    // Apply advanced styling if needed
-    if (options.gradientType && options.gradientType !== 'none' && options.gradientColors) {
-      await this.applyGradient(canvas, options.gradientType, options.gradientColors)
-    }
-
-    if (options.dotStyle && options.dotStyle !== 'square') {
-      await this.applyDotStyle(canvas, options.dotStyle)
-    }
-
-    if (options.logoUrl) {
-      await this.addLogo(canvas, options.logoUrl, size)
-    }
-
     return {
-      dataUrl: canvas.toDataURL(),
+      dataUrl,
       text: options.text,
       size,
       options
     }
   }
 
-  private static async applyGradient(
-    canvas: HTMLCanvasElement, 
-    gradientType: GradientType, 
-    colors: [string, string]
-  ) {
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-
-    const { width, height } = canvas
-    const imageData = ctx.getImageData(0, 0, width, height)
-    const data = imageData.data
-
-    let gradient: CanvasGradient
-    if (gradientType === 'linear') {
-      gradient = ctx.createLinearGradient(0, 0, width, height)
-    } else {
-      gradient = ctx.createRadialGradient(width / 2, height / 2, 0, width / 2, height / 2, Math.min(width, height) / 2)
-    }
-    
-    gradient.addColorStop(0, colors[0])
-    gradient.addColorStop(1, colors[1])
-
-    // Create a temporary canvas to render the gradient
-    const gradientCanvas = document.createElement('canvas')
-    gradientCanvas.width = width
-    gradientCanvas.height = height
-    const gradientCtx = gradientCanvas.getContext('2d')
-    if (!gradientCtx) return
-
-    gradientCtx.fillStyle = gradient
-    gradientCtx.fillRect(0, 0, width, height)
-    const gradientData = gradientCtx.getImageData(0, 0, width, height).data
-
-    // Apply gradient only to dark pixels
-    for (let i = 0; i < data.length; i += 4) {
-      const r = data[i]
-      const g = data[i + 1]
-      const b = data[i + 2]
-      
-      // Check if this is a dark pixel (QR code dot)
-      const brightness = (r + g + b) / 3
-      if (brightness < 128) {
-        data[i] = gradientData[i]
-        data[i + 1] = gradientData[i + 1]
-        data[i + 2] = gradientData[i + 2]
-      }
-    }
-
-    ctx.putImageData(imageData, 0, 0)
-  }
-
-  private static async applyDotStyle(canvas: HTMLCanvasElement, dotStyle: DotStyle) {
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-
-    // This is a simplified implementation
-    // In a real implementation, you'd need more sophisticated pattern detection
-    // For now, we'll apply a basic transformation based on the dot style
-    switch (dotStyle) {
-      case 'circle':
-      case 'rounded':
-      case 'dots':
-        // Apply slight blur for rounded effect
-        ctx.filter = 'blur(0.5px)'
-        ctx.drawImage(canvas, 0, 0)
-        ctx.filter = 'none'
-        break
-    }
-  }
-
-  private static async addLogo(canvas: HTMLCanvasElement, logoUrl: string, qrSize: number) {
-    return new Promise<void>((resolve) => {
-      const img = new Image()
-      img.crossOrigin = 'anonymous'
-      img.onload = () => {
-        const ctx = canvas.getContext('2d')
-        if (!ctx) return resolve()
-
-        const logoSize = qrSize * 0.2 // 20% of QR code size
-        const x = (qrSize - logoSize) / 2
-        const y = (qrSize - logoSize) / 2
-
-        // Add white background for logo
-        ctx.fillStyle = 'white'
-        ctx.fillRect(x - 5, y - 5, logoSize + 10, logoSize + 10)
-        
-        // Draw logo
-        ctx.drawImage(img, x, y, logoSize, logoSize)
-        resolve()
-      }
-      img.onerror = () => resolve() // Continue without logo if it fails
-      img.src = logoUrl
-    })
-  }
 
   static getAvailablePresets(): StylePreset[] {
     return [

@@ -94,6 +94,14 @@ npm run build
 
 The built files will be in the `dist` directory, ready for deployment.
 
+### Quick Deploy to GitHub Pages
+
+```bash
+npm run deploy
+```
+
+This will build the project and deploy it to your GitHub Pages site at `https://diehard073055.github.io/qr-code`.
+
 ## 📁 Project Structure
 
 ```
@@ -164,12 +172,33 @@ The project includes:
 
 ## 🚀 Deployment
 
-This project can be deployed to any static hosting service:
+### GitHub Pages (Recommended)
+
+This project is configured for automatic GitHub Pages deployment:
+
+#### Automatic Deployment
+1. Push your changes to the `main` branch
+2. GitHub Actions will automatically build and deploy your site
+3. Your site will be available at: `https://diehard073055.github.io/qr-code`
+
+#### Manual Deployment
+```bash
+npm run deploy
+```
+
+#### GitHub Pages Setup
+1. Go to your repository settings
+2. Navigate to **Pages** section
+3. Set **Source** to "Deploy from a branch"
+4. Select **gh-pages** branch and **/ (root)** folder
+5. Save the settings
+
+### Other Deployment Options
 
 - **Vercel**: Connect your repository for automatic deployments
-- **Netlify**: Drag and drop the `dist` folder
-- **GitHub Pages**: Use GitHub Actions for automated deployment
-- **AWS S3**: Upload the `dist` folder to an S3 bucket
+- **Netlify**: Drag and drop the `dist` folder or connect via Git
+- **AWS S3**: Upload the `dist` folder to an S3 bucket with static hosting
+- **Firebase Hosting**: Use `firebase deploy` after configuration
 
 ## 🤝 Contributing
 
